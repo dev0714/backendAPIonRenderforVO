@@ -1,5 +1,6 @@
 {
   "name": "payment-gateway-listener",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "start": "node index.js"
@@ -9,3 +10,4 @@
     "axios": "^1.6.0",
     "cors": "^2.8.5"
   }
+}
