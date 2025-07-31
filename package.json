@@ -1,13 +1,13 @@
 {
-  "name": "payment-gateway-listener",
+  "name": "paygate-webhook",
   "version": "1.0.0",
-  "type": "module",
+  "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
+    "body-parser": "^1.20.2",
     "express": "^4.18.2",
-    "axios": "^1.6.0",
-    "cors": "^2.8.5"
+    "xml2js": "^0.5.0"
   }
 }
