@@ -1,62 +1,61 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import xml2js from 'xml2js';
 import querystring from 'querystring';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(bodyParser.text({ type: 'application/xml' }));
+// 🧠 Parse x-www-form-urlencoded from PayGate
+app.use(bodyParser.urlencoded({ extended: false }));
 
-function flattenXml(obj, prefix = '', res = {}) {
-  for (let key in obj) {
-    const value = obj[key];
-    const newKey = prefix ? `${prefix}_${key}` : key;
-
-    if (Array.isArray(value) && typeof value[0] === 'object') {
-      flattenXml(value[0], newKey, res);
-    } else {
-      res[newKey] = Array.isArray(value) ? value[0] : value;
-    }
-  }
-  return res;
-}
-
+// 🔁 Flatten form and send to v0 as query params
 const forwardToV0 = async (parsedData, type = 'notify') => {
   try {
-    const flatData = flattenXml(parsedData);
-    const query = querystring.stringify(flatData);
-    const v0Url = `https://v0-pay-sync-weld.vercel.app/api/return/?source=${type}&${query}`;
+    const query = querystring.stringify({
+      source: type,
+      ...parsedData,
+    });
 
-    const res = await fetch(v0Url);
-    const text = await res.text();
+    const v0Url = `https://your-v0-function-name.v0.dev/?${query}`;
+    console.log(`🌐 Forwarding to v0: ${v0Url}`);
 
-    console.log('✅ v0 response:', text);
+    const response = await fetch(v0Url);
+    const result = await response.text();
+
+    console.log('✅ v0 response:', result);
   } catch (err) {
-    console.error('❌ Forwarding error:', err);
+    console.error('❌ Forwarding to v0 failed:', err);
   }
 };
 
-app.post('/notify', (req, res) => {
-  xml2js.parseString(req.body, async (err, result) => {
-    if (err) return res.status(400).send('Invalid XML');
+// 🛎️ Handle notifyUrl
+app.post('/notify', async (req, res) => {
+  try {
+    const parsedData = req.body;
+    console.log('📨 /notify received:', parsedData);
 
-    console.log('📨 /notify:', result);
-    await forwardToV0(result, 'notify');
+    await forwardToV0(parsedData, 'notify');
     res.sendStatus(200);
-  });
+  } catch (err) {
+    console.error('❌ Notify error:', err);
+    res.sendStatus(500);
+  }
 });
 
-app.post('/return', (req, res) => {
-  xml2js.parseString(req.body, async (err, result) => {
-    if (err) return res.status(400).send('Invalid XML');
+// 🔁 Handle returnUrl
+app.post('/return', async (req, res) => {
+  try {
+    const parsedData = req.body;
+    console.log('📨 /return received:', parsedData);
 
-    console.log('📨 /return:', result);
-    await forwardToV0(result, 'return');
-    res.send('✅ Return received');
-  });
+    await forwardToV0(parsedData, 'return');
+    res.send('✅ Transaction processed. Thank you.');
+  } catch (err) {
+    console.error('❌ Return error:', err);
+    res.sendStatus(500);
+  }
 });
 
 app.listen(port, () => {
-  console.log(`🚀 PayGate handler running on port ${port}`);
+  console.log(`🚀 PayGate handler listening on port ${port}`);
 });
