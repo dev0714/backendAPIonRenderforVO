@@ -1,16 +1,14 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const xml2js = require('xml2js');
-const fetch = require('node-fetch'); // If using Node < 18
-const querystring = require('querystring');
+import express from 'express';
+import bodyParser from 'body-parser';
+import xml2js from 'xml2js';
+import fetch from 'node-fetch';
+import querystring from 'querystring';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Accept raw XML text
 app.use(bodyParser.text({ type: 'application/xml' }));
 
-// 🔁 Helper to flatten nested XML to key=value format
 function flattenXml(obj, prefix = '', res = {}) {
   for (let key in obj) {
     const value = obj[key];
@@ -25,52 +23,41 @@ function flattenXml(obj, prefix = '', res = {}) {
   return res;
 }
 
-// 🔁 Forward to v0 as GET request
 const forwardToV0 = async (parsedData, type = 'notify') => {
   try {
     const flatData = flattenXml(parsedData);
     const query = querystring.stringify(flatData);
-    
     const v0Url = `https://your-v0-function-name.v0.dev/?source=${type}&${query}`;
-    console.log(`🌐 Forwarding to v0: ${v0Url}`);
 
     const res = await fetch(v0Url);
     const text = await res.text();
 
     console.log('✅ v0 response:', text);
   } catch (err) {
-    console.error('❌ Failed to forward to v0:', err);
+    console.error('❌ Forwarding error:', err);
   }
 };
 
-// 🔔 /notify handler
 app.post('/notify', (req, res) => {
   xml2js.parseString(req.body, async (err, result) => {
-    if (err) {
-      console.error('❌ Invalid XML:', err);
-      return res.status(400).send('Invalid XML');
-    }
+    if (err) return res.status(400).send('Invalid XML');
 
-    console.log('📨 Notify received:', result);
+    console.log('📨 /notify:', result);
     await forwardToV0(result, 'notify');
     res.sendStatus(200);
   });
 });
 
-// ↩️ /return handler
 app.post('/return', (req, res) => {
   xml2js.parseString(req.body, async (err, result) => {
-    if (err) {
-      console.error('❌ Invalid XML:', err);
-      return res.status(400).send('Invalid XML');
-    }
+    if (err) return res.status(400).send('Invalid XML');
 
-    console.log('📨 Return received:', result);
+    console.log('📨 /return:', result);
     await forwardToV0(result, 'return');
-    res.send('✅ Transaction return processed.');
+    res.send('✅ Return received');
   });
 });
 
 app.listen(port, () => {
-  console.log(`🚀 PayGate handler running on port ${port}`);
+  console.log(`🚀 Server running on port ${port}`);
 });
