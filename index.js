@@ -1,7 +1,6 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import xml2js from 'xml2js';
-import fetch from 'node-fetch';
 import querystring from 'querystring';
 
 const app = express();
@@ -27,7 +26,7 @@ const forwardToV0 = async (parsedData, type = 'notify') => {
   try {
     const flatData = flattenXml(parsedData);
     const query = querystring.stringify(flatData);
-    const v0Url = `https://your-v0-function-name.v0.dev/?source=${type}&${query}`;
+    const v0Url = `https://v0-pay-sync-weld.vercel.app/api/return/?source=${type}&${query}`;
 
     const res = await fetch(v0Url);
     const text = await res.text();
@@ -59,5 +58,5 @@ app.post('/return', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
+  console.log(`🚀 PayGate handler running on port ${port}`);
 });
