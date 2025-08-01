@@ -4,10 +4,13 @@ import bodyParser from 'body-parser';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// 🧠 Parse x-www-form-urlencoded (PayGate sends this)
+// Replace this with your actual V0 function URL
+const V0_BASE_URL = 'https://your-v0-function-name.v0.dev';
+
+// Parse x-www-form-urlencoded (PayGate sends this format)
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// 🔁 Forward data to V0 as a GET request with query string
+// 🔁 Forward data to V0 as a GET request (for notify)
 const forwardToV0 = async (data, type = 'notify') => {
   try {
     const queryData = {
@@ -16,7 +19,7 @@ const forwardToV0 = async (data, type = 'notify') => {
     };
 
     const query = new URLSearchParams(queryData).toString();
-    const v0Url = `https://your-v0-function-name.v0.dev/?${query}`; // ⬅️ replace with your real V0 link
+    const v0Url = `${V0_BASE_URL}/?${query}`;
 
     console.log('🌐 Calling v0 URL:', v0Url);
 
@@ -29,28 +32,37 @@ const forwardToV0 = async (data, type = 'notify') => {
   }
 };
 
-// 🛎️ PayGate notify URL handler
+// 🛎️ Notify handler (silent server-to-server callback)
 app.post('/notify', async (req, res) => {
   try {
     const parsedData = req.body;
     console.log('📨 /notify received:', parsedData);
 
     await forwardToV0(parsedData, 'notify');
-    res.sendStatus(200);
+    res.sendStatus(200); // Respond to PayGate
   } catch (err) {
     console.error('❌ Notify error:', err);
     res.sendStatus(500);
   }
 });
 
-// 🔁 PayGate return URL handler
+// 🔁 Return handler (redirect user’s browser to V0 link)
 app.post('/return', async (req, res) => {
   try {
     const parsedData = req.body;
     console.log('📨 /return received:', parsedData);
 
-    await forwardToV0(parsedData, 'return');
-    res.send('✅ Transaction processed. Thank you.');
+    const queryData = {
+      source: 'return',
+      ...parsedData,
+    };
+
+    const query = new URLSearchParams(queryData).toString();
+    const v0RedirectUrl = `${V0_BASE_URL}/?${query}`;
+
+    console.log('🔁 Redirecting user to:', v0RedirectUrl);
+
+    res.redirect(v0RedirectUrl); // Redirect user to v0
   } catch (err) {
     console.error('❌ Return error:', err);
     res.sendStatus(500);
