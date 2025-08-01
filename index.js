@@ -1,34 +1,35 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import querystring from 'querystring';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// 🧠 Parse x-www-form-urlencoded from PayGate
+// 🧠 Parse x-www-form-urlencoded (PayGate sends this)
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// 🔁 Flatten form and send to v0 as query params
-const forwardToV0 = async (parsedData, type = 'notify') => {
+// 🔁 Forward data to V0 as a GET request with query string
+const forwardToV0 = async (data, type = 'notify') => {
   try {
-    const query = querystring.stringify({
+    const queryData = {
       source: type,
-      ...parsedData,
-    });
+      ...data,
+    };
 
-    const v0Url = `https://your-v0-function-name.v0.dev/?${query}`;
-    console.log(`🌐 Forwarding to v0: ${v0Url}`);
+    const query = new URLSearchParams(queryData).toString();
+    const v0Url = `https://your-v0-function-name.v0.dev/?${query}`; // ⬅️ replace with your real V0 link
 
-    const response = await fetch(v0Url);
-    const result = await response.text();
+    console.log('🌐 Calling v0 URL:', v0Url);
+
+    const res = await fetch(v0Url);
+    const result = await res.text();
 
     console.log('✅ v0 response:', result);
   } catch (err) {
-    console.error('❌ Forwarding to v0 failed:', err);
+    console.error('❌ Failed to forward to v0:', err);
   }
 };
 
-// 🛎️ Handle notifyUrl
+// 🛎️ PayGate notify URL handler
 app.post('/notify', async (req, res) => {
   try {
     const parsedData = req.body;
@@ -42,7 +43,7 @@ app.post('/notify', async (req, res) => {
   }
 });
 
-// 🔁 Handle returnUrl
+// 🔁 PayGate return URL handler
 app.post('/return', async (req, res) => {
   try {
     const parsedData = req.body;
@@ -57,5 +58,5 @@ app.post('/return', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`🚀 PayGate handler listening on port ${port}`);
+  console.log(`🚀 PayGate listener running on port ${port}`);
 });
