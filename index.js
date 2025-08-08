@@ -5,7 +5,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Replace this with your actual V0 function URL
-const V0_BASE_URL = 'https://v0-pay-sync-weld.vercel.app/api/return';
+const V0_BASE_URL = 'https://paysync-rewards-1032654183034.africa-south1.run.app/return';
 
 // Parse x-www-form-urlencoded (PayGate sends this format)
 app.use(bodyParser.urlencoded({ extended: false }));
