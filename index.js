@@ -8,8 +8,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Two separate URLs for V0
-const V0_NOTIFY_URL = 'https://payments.mondomobile.co.za/api/notify';
-const V0_RETURN_URL = 'https://payments.mondomobile.co.za/api/return';
+const V0_NOTIFY_URL = 'https://payments.mondomobile.co.za/notify';
+const V0_RETURN_URL = 'https://payments.mondomobile.co.za/return';
 
 // Parse x-www-form-urlencoded (PayGate sends this format)
 app.use(bodyParser.urlencoded({ extended: false }));
