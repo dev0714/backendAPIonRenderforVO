@@ -1,77 +1,62 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 
-// 🔓 Temporary workaround to ignore SSL verification
+// Temporary workaround to ignore SSL verification
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Replace this with your actual V0 function URL
-const V0_BASE_URL = 'https://payments.mondomobile.co.za/return';
+// Two separate URLs for V0
+const V0_NOTIFY_URL = 'https://payments.mondomobile.co.za/notify';
+const V0_RETURN_URL = 'https://payments.mondomobile.co.za/return';
 
 // Parse x-www-form-urlencoded (PayGate sends this format)
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// 🔁 Forward data to V0 as a GET request (for notify)
-const forwardToV0 = async (data, type = 'notify') => {
+// Generic forwarder
+const forwardToV0 = async (data, targetUrl) => {
   try {
-    const queryData = {
-      source: type,
-      ...data,
-    };
+    const query = new URLSearchParams(data).toString();
+    const v0Url = `${targetUrl}?${query}`;
 
-    const query = new URLSearchParams(queryData).toString();
-    const v0Url = `${V0_BASE_URL}/?${query}`;
-
-    console.log('🌐 Calling v0 URL:', v0Url);
+    console.log('Calling v0 URL:', v0Url);
 
     const res = await fetch(v0Url);
     const result = await res.text();
 
-    console.log('✅ v0 response:', result);
+    console.log('V0 response:', result);
   } catch (err) {
-    console.error('❌ Failed to forward to v0:', err);
+    console.error('Failed to forward to v0:', err);
   }
 };
 
-// 🛎️ Notify handler (silent server-to-server callback)
+// Notify handler (server-to-server callback)
 app.post('/notify', async (req, res) => {
   try {
-    const parsedData = req.body;
-    console.log('📨 /notify received:', parsedData);
-
-    await forwardToV0(parsedData, 'notify');
-    res.sendStatus(200); // Respond to PayGate
+    console.log('/notify received:', req.body);
+    await forwardToV0(req.body, V0_NOTIFY_URL);
+    res.sendStatus(200);
   } catch (err) {
-    console.error('❌ Notify error:', err);
+    console.error('Notify error:', err);
     res.sendStatus(500);
   }
 });
 
-// 🔁 Return handler (redirect user’s browser to V0 link)
+// Return handler (redirect user’s browser to V0 link)
 app.post('/return', async (req, res) => {
   try {
-    const parsedData = req.body;
-    console.log('📨 /return received:', parsedData);
-
-    const queryData = {
-      source: 'return',
-      ...parsedData,
-    };
-
-    const query = new URLSearchParams(queryData).toString();
-    const v0RedirectUrl = `${V0_BASE_URL}/?${query}`;
-
-    console.log('🔁 Redirecting user to:', v0RedirectUrl);
-
-    res.redirect(v0RedirectUrl); // Redirect user to v0
+    console.log('/return received:', req.body);
+    const query = new URLSearchParams(req.body).toString();
+    const v0RedirectUrl = `${V0_RETURN_URL}?${query}`;
+    console.log('Redirecting user to:', v0RedirectUrl);
+    res.redirect(v0RedirectUrl);
   } catch (err) {
-    console.error('❌ Return error:', err);
+    console.error('Return error:', err);
     res.sendStatus(500);
   }
 });
 
 app.listen(port, () => {
-  console.log(`🚀 PayGate listener running on port ${port}`);
+  console.log(`PayGate listener running on port ${port}`);
 });
