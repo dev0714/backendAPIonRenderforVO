@@ -1,12 +1,13 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 
+// ❗ Remove this in production if you have valid SSL certs
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Main *front-end* return page (user-facing)
+// Main front-end page (user-facing)
 const FRONTEND_RETURN_URL = 'https://payments.mondomobile.co.za/return';
 
 // Background API URLs (server-to-server)
@@ -15,7 +16,7 @@ const V0_RETURN_URL = 'https://payments.mondomobile.co.za/api/return';
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// Helper: POST form data server-to-server
+// Helper to POST form-encoded data to a URL
 async function postForm(targetUrl, data) {
   const body = new URLSearchParams(data).toString();
   const controller = new AbortController();
@@ -39,8 +40,9 @@ async function postForm(targetUrl, data) {
   }
 }
 
-// ----- NOTIFY: Background only -----
-app.post('/api/notify', async (req, res) => {
+// -------------------- NOTIFY --------------------
+// POST notify
+app.post(['/notify', '/api/notify'], async (req, res) => {
   try {
     console.log('[notify:POST] received', req.body);
     await postForm(V0_NOTIFY_URL, req.body);
@@ -51,10 +53,11 @@ app.post('/api/notify', async (req, res) => {
   }
 });
 
-app.get('/api/return', async (req, res) => {
+// GET notify
+app.get(['/notify', '/api/notify'], async (req, res) => {
   try {
     console.log('[notify:GET] received', req.query);
-    await postForm(V0_RETURN_URL, req.query);
+    await postForm(V0_NOTIFY_URL, req.query);
     return res.sendStatus(200);
   } catch (err) {
     console.error('[notify:GET] error', err);
@@ -62,15 +65,16 @@ app.get('/api/return', async (req, res) => {
   }
 });
 
-// ----- RETURN: Background + Redirect -----
-app.post('/api/return', async (req, res) => {
+// -------------------- RETURN --------------------
+// POST return
+app.post(['/return', '/api/return'], async (req, res) => {
   try {
-    // console.log('[return:POST] received', req.body);
+    console.log('[return:POST] received', req.body);
 
-    // // Call background API
-    // await postForm(V0_RETURN_URL, req.body);
+    // Call background API first
+    await postForm(V0_RETURN_URL, req.body);
 
-    // Redirect user to front-end page
+    // Redirect user to front-end return page
     const query = new URLSearchParams(req.body).toString();
     const frontendRedirectUrl = `${FRONTEND_RETURN_URL}?${query}`;
     console.log('[return:POST] redirecting user ->', frontendRedirectUrl);
@@ -78,6 +82,26 @@ app.post('/api/return', async (req, res) => {
     return res.redirect(302, frontendRedirectUrl);
   } catch (err) {
     console.error('[return:POST] error', err);
+    return res.sendStatus(500);
+  }
+});
+
+// GET return
+app.get(['/return', '/api/return'], async (req, res) => {
+  try {
+    console.log('[return:GET] received', req.query);
+
+    // Call background API first
+    await postForm(V0_RETURN_URL, req.query);
+
+    // Redirect user to front-end return page
+    const query = new URLSearchParams(req.query).toString();
+    const frontendRedirectUrl = `${FRONTEND_RETURN_URL}?${query}`;
+    console.log('[return:GET] redirecting user ->', frontendRedirectUrl);
+
+    return res.redirect(302, frontendRedirectUrl);
+  } catch (err) {
+    console.error('[return:GET] error', err);
     return res.sendStatus(500);
   }
 });
