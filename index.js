@@ -8,7 +8,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // ----------------- CONFIG -----------------
-const FRONTEND_RETURN_URL = 'https://frontend.mondomobile.co.za/return/page';
+const FRONTEND_RETURN_URL = 'https://payments.mondomobile.co.za/return/page';
 const V0_NOTIFY_URL = 'https://payments.mondomobile.co.za/api/notify';
 const V0_RETURN_URL = 'https://payments.mondomobile.co.za/api/return';
 
