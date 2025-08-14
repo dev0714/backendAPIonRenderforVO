@@ -40,7 +40,7 @@ async function postForm(targetUrl, data) {
 }
 
 // ----- NOTIFY: Background only -----
-app.post('/notify', async (req, res) => {
+app.post('/api/notify', async (req, res) => {
   try {
     console.log('[notify:POST] received', req.body);
     await postForm(V0_NOTIFY_URL, req.body);
@@ -51,7 +51,7 @@ app.post('/notify', async (req, res) => {
   }
 });
 
-app.get('/notify', async (req, res) => {
+app.get('/api/return', async (req, res) => {
   try {
     console.log('[notify:GET] received', req.query);
     await postForm(V0_NOTIFY_URL, req.query);
@@ -78,25 +78,6 @@ app.post('/return', async (req, res) => {
     return res.redirect(302, frontendRedirectUrl);
   } catch (err) {
     console.error('[return:POST] error', err);
-    return res.sendStatus(500);
-  }
-});
-
-app.get('/return', async (req, res) => {
-  try {
-    console.log('[return:GET] received', req.query);
-
-    // Call background API
-    await postForm(V0_RETURN_URL, req.query);
-
-    // Redirect user to front-end page
-    const query = new URLSearchParams(req.query).toString();
-    const frontendRedirectUrl = `${FRONTEND_RETURN_URL}?${query}`;
-    console.log('[return:GET] redirecting user ->', frontendRedirectUrl);
-
-    return res.redirect(302, frontendRedirectUrl);
-  } catch (err) {
-    console.error('[return:GET] error', err);
     return res.sendStatus(500);
   }
 });
