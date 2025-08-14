@@ -54,7 +54,7 @@ app.post('/api/notify', async (req, res) => {
 app.get('/api/return', async (req, res) => {
   try {
     console.log('[notify:GET] received', req.query);
-    await postForm(V0_NOTIFY_URL, req.query);
+    await postForm(V0_RETURN_URL, req.query);
     return res.sendStatus(200);
   } catch (err) {
     console.error('[notify:GET] error', err);
