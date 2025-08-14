@@ -63,12 +63,12 @@ app.get('/api/return', async (req, res) => {
 });
 
 // ----- RETURN: Background + Redirect -----
-app.post('/return', async (req, res) => {
+app.post('/api/return', async (req, res) => {
   try {
-    console.log('[return:POST] received', req.body);
+    // console.log('[return:POST] received', req.body);
 
-    // Call background API
-    await postForm(V0_RETURN_URL, req.body);
+    // // Call background API
+    // await postForm(V0_RETURN_URL, req.body);
 
     // Redirect user to front-end page
     const query = new URLSearchParams(req.body).toString();
