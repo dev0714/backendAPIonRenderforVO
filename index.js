@@ -1,22 +1,20 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 
-// ❗ Only for testing if you have self-signed certs
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // ----------------- CONFIG -----------------
-const FRONTEND_RETURN_URL = 'https://payments.mondomobile.co.za/return/page';
-const V0_NOTIFY_URL = 'https://payments.mondomobile.co.za/api/notify';
-const V0_RETURN_URL = 'https://payments.mondomobile.co.za/api/return';
+const FRONTEND_RETURN_URL = 'https://payments.mondomobile.co.za/return';
+const BACKEND_NOTIFY_URL = 'https://payments.mondomobile.co.za/api/notify';
+const BACKEND_RETURN_URL = 'https://payments.mondomobile.co.za/api/return';
 
-// ----------------- MIDDLEWARE -----------------
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-// ----------------- HELPERS -----------------
+// ----------------- HELPER -----------------
 async function postForm(targetUrl, data) {
   const body = new URLSearchParams(data).toString();
   const controller = new AbortController();
@@ -38,39 +36,48 @@ async function postForm(targetUrl, data) {
   }
 }
 
-// ----------------- NOTIFY ROUTES -----------------
+// ----------------- NOTIFY ROUTE -----------------
 app.all(['/notify', '/api/notify'], async (req, res) => {
   try {
     const data = req.method === 'POST' ? req.body : req.query;
-    console.log(`[notify:${req.method}] received`, data);
+    console.log('[notify] received', data);
 
-    await postForm(V0_NOTIFY_URL, data);
+    // Forward to backend notify API
+    try {
+      await postForm(BACKEND_NOTIFY_URL, data);
+    } catch (err) {
+      console.warn('[notify] backend failed', err);
+    }
 
-    // Notify route is server-to-server: just return 200
+    // No redirect — server-to-server only
     return res.sendStatus(200);
   } catch (err) {
-    console.error(`[notify:${req.method}] error`, err);
+    console.error('[notify] error', err);
     return res.sendStatus(500);
   }
 });
 
-// ----------------- RETURN ROUTES -----------------
+// ----------------- RETURN ROUTE -----------------
 app.all(['/return', '/api/return'], async (req, res) => {
   try {
     const data = req.method === 'POST' ? req.body : req.query;
-    console.log(`[return:${req.method}] received`, data);
+    console.log('[return] received', data);
 
-    // Call your background API first (server-to-server)
-    await postForm(V0_RETURN_URL, data);
+    // Forward to backend return API
+    try {
+      await postForm(BACKEND_RETURN_URL, data);
+    } catch (err) {
+      console.warn('[return] backend failed', err);
+    }
 
-    // Redirect user to the front-end page with query params
+    // Redirect user to front-end with query params
     const query = new URLSearchParams(data).toString();
     const frontendRedirectUrl = `${FRONTEND_RETURN_URL}?${query}`;
-    console.log(`[return:${req.method}] redirecting user ->`, frontendRedirectUrl);
+    console.log('[return] redirecting user ->', frontendRedirectUrl);
 
     return res.redirect(302, frontendRedirectUrl);
   } catch (err) {
-    console.error(`[return:${req.method}] error`, err);
+    console.error('[return] error', err);
     return res.sendStatus(500);
   }
 });
