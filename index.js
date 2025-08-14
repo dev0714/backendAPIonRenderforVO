@@ -1,6 +1,8 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 const app = express();
 const port = process.env.PORT || 3000;
 
